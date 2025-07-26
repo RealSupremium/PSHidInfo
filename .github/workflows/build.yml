@@ -1,0 +1,54 @@
+name: .NET Build
+
+on:
+  push:
+    branches: [ "main" ]
+  # Allows the workflow to be manually triggered from the GitHub UI
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact_name: PSHidInfo.exe
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact_name: PSHidInfo
+          - os: macos-latest
+            rid: osx-x64
+            artifact_name: PSHidInfo
+    
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build project
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish project
+        run: >
+          dotnet publish ./PSHidInfo.csproj 
+          --configuration Release 
+          --runtime win-x64 
+          --self-contained false 
+          /p:PublishSingleFile=true 
+          /p:PublishReadyToRun=false 
+          /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSHidInfo-${{ matrix.rid }}
+          path: ./bin/Release/net9.0/${{ matrix.rid }}/publish/${{ matrix.artifact_name }}

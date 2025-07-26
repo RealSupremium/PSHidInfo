@@ -1,0 +1,64 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PSHidInfo"
+        mc:Ignorable="d" d:DesignWidth="720" d:DesignHeight="350"
+        x:Class="PSHidInfo.MainWindow"
+        Title="PS HID Info"
+        Width="720" Height="350">
+  <Grid Margin="10" RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,*">
+    <ComboBox x:Name="DeviceSelector"
+              Grid.Row="0"
+              Grid.Column="0"
+              Grid.ColumnSpan="2"
+              Margin="0,0,0,5"
+              PlaceholderText="Select a PS HID device"
+              SelectionChanged="DeviceSelector_SelectionChanged"
+              DropDownOpened="DeviceSelector_DropDownOpened"
+              HorizontalAlignment="Stretch"/>
+
+    <ComboBox x:Name="Rates"
+              Grid.Row="1"
+              Grid.Column="0"
+              Grid.ColumnSpan="2"
+              Margin="0,5,0,10"
+              PlaceholderText="Polling Rate Override (Sense only)"
+              SelectionChanged="Rate_SelectionChanged"
+              HorizontalAlignment="Stretch">
+      <ComboBox.ItemsSource>
+        <local:PollRate/>
+      </ComboBox.ItemsSource>
+    </ComboBox>
+
+    <Border Grid.Row="2" Grid.Column="0" Margin="0,0,5,0" BorderBrush="Gray" BorderThickness="1" CornerRadius="3">
+      <Grid>
+        <TextBlock Text="Poll Frequency"
+                   FontWeight="Bold"
+                   Margin="8"
+                   VerticalAlignment="Top"
+                   HorizontalAlignment="Center" />
+        <TextBlock x:Name="Indicator"
+                   Text="Median: N/A&#xA;Deviation: N/A&#xA;Average: N/A"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   FontSize="28"/>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="2" Grid.Column="1" Margin="5,0,0,0" BorderBrush="Gray" BorderThickness="1" CornerRadius="3">
+      <Grid>
+        <TextBlock Text="Roundtrip Latency"
+                   FontWeight="Bold"
+                   Margin="8"
+                   VerticalAlignment="Top"
+                   HorizontalAlignment="Center" />
+        <TextBlock x:Name="Latency"
+                   Text="Median: N/A&#xA;Deviation: N/A&#xA;Average: N/A"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   FontSize="28"/>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
