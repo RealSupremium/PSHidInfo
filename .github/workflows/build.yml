@@ -41,7 +41,7 @@ jobs:
         run: >
           dotnet publish ./PSHidInfo.csproj 
           --configuration Release 
-          --runtime win-x64 
+          --runtime ${{ matrix.rid }} 
           --self-contained false 
           /p:PublishSingleFile=true 
           /p:PublishReadyToRun=false 
