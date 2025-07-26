@@ -51,4 +51,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PSHidInfo-${{ matrix.rid }}
-          path: ./bin/Release/net9.0/${{ matrix.rid }}/publish/${{ matrix.artifact_name }}
+          path: ./bin/Release/net9.0/${{ matrix.rid }}/publish/
