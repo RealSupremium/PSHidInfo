@@ -14,6 +14,8 @@ namespace PSHidInfo
         private ObservableCollection<HidDevice> _devices;
         private PSHidDevice? _deviceManager;
 
+        private bool _ignoreEvent = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -55,6 +57,7 @@ namespace PSHidInfo
                     _deviceManager = new PSHidDevice(selectedDevice);
                     _deviceManager.FrequencyDataUpdated += DeviceManager_FrequencyDataUpdated;
                     _deviceManager.LatencyDataUpdated += DeviceManager_LatencyDataUpdated;
+                    _deviceManager.RateUpdated += DeviceManager_RateUpdated;
                     await _deviceManager.Start();
                 }
                 catch (Exception ex)
@@ -82,9 +85,19 @@ namespace PSHidInfo
             });
         }
 
+        private void DeviceManager_RateUpdated(object? sender, RateEventArgs e)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                _ignoreEvent = true;
+                Rates.SelectedItem = e.PollRate;
+                _ignoreEvent = false;
+            });
+        }
+
         private void Rate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (Rates.SelectedItem is Rate newRate && _deviceManager != null)
+            if (Rates.SelectedItem is Rate newRate && _deviceManager != null && !_ignoreEvent)
             {
                 try
                 {

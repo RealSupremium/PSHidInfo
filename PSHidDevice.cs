@@ -19,6 +19,16 @@ namespace PSHidInfo
             Average = average;
         }
     }
+    
+    public class RateEventArgs : EventArgs
+    {
+        public Rate PollRate { get; }
+
+        public RateEventArgs(Rate pollRate)
+        {
+            PollRate = pollRate;
+        }
+    }
 
     /// <summary>
     /// Manages the reading and writing threads for a specific PS HID device.
@@ -47,6 +57,11 @@ namespace PSHidInfo
         /// Fires when new latency data is available.
         /// </summary>
         public event EventHandler<DataUpdateEventArgs>? LatencyDataUpdated;
+
+        /// <summary>
+        /// Fires when new poll rate data is available.
+        /// </summary>
+        public event EventHandler<RateEventArgs>? RateUpdated;
 
         /// <summary>
         /// Initializes a new instance of the PSHidDevice class.
@@ -153,24 +168,37 @@ namespace PSHidInfo
             {
                 try
                 {
-                    // Prepare to receive the response
-                    featureReport.AsSpan().Fill(0);
-                    featureReport[0] = 0x81; // Report ID
-                    featureReport[1] = 0x09;
-                    featureReport[2] = 0x1a;
-
                     // GetFeature will block until the device responds.
                     // We'll also measure the time it takes.
                     await Task.Run(() =>
                     {
+                        featureReport.AsSpan().Fill(0);
+
+                        featureReport[0] = 0x80; // Report ID
+                        featureReport[1] = 0x09;
+                        featureReport[2] = 0x1a;
+
+                        var crc = CRC32.CalculateCrc32(0x53, featureReport);
+                        BitConverter.GetBytes(crc).CopyTo(featureReport, featureReport.Length - 4);
+
+                        _deviceStream.SetFeature(featureReport);
+
+                        featureReport.AsSpan().Fill(0);
+                        featureReport[0] = 0x81; // Report ID
+
                         stopwatch.Restart();
                         _deviceStream.GetFeature(featureReport);
                         stopwatch.Stop();
+
+                        if (featureReport[1] == 0x09 && featureReport[2] == 0x1a)
+                        {
+                            OnRateUpdated(new RateEventArgs((Rate)featureReport[4]));
+                        }
                     }, token);
 
                     // Calculate and report latency stats
                     _rollingAverageLatency.Add(stopwatch.Elapsed.TotalMilliseconds);
-                    _rollingMedianLatency.Add(_rollingAverageLatency.Average);
+                    _rollingMedianLatency.Add(stopwatch.Elapsed.TotalMilliseconds);
 
                     OnLatencyDataUpdated(new DataUpdateEventArgs(_rollingMedianLatency.Median, _rollingMedianLatency.Deviation, _rollingAverageLatency.Average));
 
@@ -206,7 +234,7 @@ namespace PSHidInfo
             _deviceStream.Flush();
 
             // Then, send the new rate
-            rate = (int)newRate + (((int)newRate/6) << 16);
+            rate = (int)newRate + (((int)newRate / 6) << 16);
             BitConverter.GetBytes(rate).CopyTo(featureReport, 2);
             crc = CRC32.CalculateCrc32(0x53, featureReport);
             BitConverter.GetBytes(crc).CopyTo(featureReport, 0x2C);
@@ -228,6 +256,11 @@ namespace PSHidInfo
         protected virtual void OnLatencyDataUpdated(DataUpdateEventArgs e)
         {
             LatencyDataUpdated?.Invoke(this, e);
+        }
+
+        protected virtual void OnRateUpdated(RateEventArgs e)
+        {
+            RateUpdated?.Invoke(this, e);
         }
 
         /// <summary>
